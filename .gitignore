@@ -1,3 +1,5 @@
 .venv
 testfootage0/
 testfootage1/
+testfootage2/
+__pycache__
