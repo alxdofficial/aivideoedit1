@@ -14,10 +14,11 @@ class Frame:
 
 # Video class to hold video-specific information, including an array of frames
 class Video:
-    def __init__(self, container, total_frames, fps):
+    def __init__(self, container, total_frames, fps, video_path):
         self.container = container  # PyAV container for video metadata
         self.total_frames = total_frames  # Total number of frames in the video
         self.fps = fps  # Frame rate of the video
+        self.video_path = video_path
         self.frames = []  # List to hold Frame objects
 
     def add_frame(self, image, frame_number):

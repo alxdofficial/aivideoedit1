@@ -30,9 +30,9 @@ class VideoMomentExtractor:
         else:
             self.footage_comprehension = GptFootageComprehension(api_key=os.getenv('OPENAI_API_KEY'), model_name=args.visionmodel)
 
-        self.clip_selector = ClipSelector(api_key=os.getenv('OPENAI_API_KEY'), model_name=args.selectmodel)
+        self.clip_selector = ClipSelector(os.getenv('OPENAI_API_KEY'), args.selectmodel, self.frame_extraction_frequency, args.user_prompt)
 
-    def extract_frames_from_video(self, video_path, footage_data):
+    def extract_frames_from_video(self, video_path, footage_data, max_frames = 256):
         '''
         Extract frames and indices from a video at a given frame extraction frequency.
         Args:
@@ -47,18 +47,22 @@ class VideoMomentExtractor:
         print(f"Total frames: {total_frames}")
 
         # Create a Video object
-        video = Video(container=container, total_frames=total_frames, fps=fps)
+        video = Video(container=container, total_frames=total_frames, fps=fps, video_path = video_path)
 
         # Calculate indices to extract frames at a defined frequency
         indices = np.arange(0, total_frames, self.frame_extraction_frequency).astype(int)
 
         # Decode the video to extract frames
         container.seek(0)
+        count = 0
         # print(f"Extracting frames at every {self.frame_extraction_frequency} frames...")
         for i, frame in enumerate(container.decode(video=0)):
             if i in indices:
                 image = frame.to_ndarray(format="rgb24")
-                video.add_frame(image=image, frame_number=i)
+                video.add_frame(image=image, frame_number=i)   
+                count += 1
+            if count == max_frames:
+                break
 
         # Add the processed video to the footage data
         footage_data.add_video(video)
@@ -91,17 +95,17 @@ class VideoMomentExtractor:
         self.footage_comprehension.comprehend_frames(self.footage_data)
 
         # Select the most interesting moments using GPT-4O
-        final_selected = self.clip_selector.select_moments(self.footage_data)
+        self.clip_selector.select_moments(self.footage_data)
 
 
 # Argument parsing setup
 def parse_args():
     parser = argparse.ArgumentParser(description="Video Moment Extractor using LLaVA or GPT-4V")
-    parser.add_argument("--visionmodel", type=str, default="llava", help="model for frame descriptions")
-    # parser.add_argument("--visionmodel", type=str, default="gpt-4o-mini", help="model for frame descriptions")
+    # parser.add_argument("--visionmodel", type=str, default="llava", help="model for frame descriptions")
+    parser.add_argument("--visionmodel", type=str, default="gpt-4o-mini", help="model for frame descriptions")
     parser.add_argument("--selectmodel", type=str, default="gpt-4o", help="model for selecting moments")
-    parser.add_argument("--folder_path", type=str, default="testfootage2", help="Path to the folder containing video files")
-    parser.add_argument("--frame_extraction_frequency", type=int, default=64, help="Frequency of frame extraction (default: 96 frames)")
+    parser.add_argument("--folder_path", type=str, default="testfootage3", help="Path to the folder containing video files")
+    parser.add_argument("--frame_extraction_frequency", type=int, default=96, help="Frequency of frame extraction (default: 24 frames) 1 sec")
     return parser.parse_args()
 
 
