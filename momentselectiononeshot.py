@@ -20,7 +20,7 @@ class VideoMomentExtractorOneShot:
             self.device = torch.device("cpu")
 
         # Initialize the one-shot selector model
-        self.oneshot_selector = GptSelectorOneShot(os.getenv('OPENAI_API_KEY'), args.selectmodel, self.frame_extraction_frequency, args.user_prompt)
+        self.oneshot_selector = GptSelectorOneShot(os.getenv('OPENAI_API_KEY'), args.selectmodel, args.user_prompt)
         self.target_duration_range = (30, 60)  # Range in seconds (min: 30, max: 60)
         self.seconds_per_clip = 4  # Assuming each clip is 4 seconds long
 
@@ -30,9 +30,10 @@ class VideoMomentExtractorOneShot:
         """
         max_duration = self.target_duration_range[1]
         max_clips = math.floor(max_duration / self.seconds_per_clip)
+        print("max number of select clips: ", max_clips)
         return max_clips
 
-    def extract_frames_from_video(self, video_path, footage_data, max_frames=256):
+    def extract_frames_from_video(self, video_path, max_frames=128):
         '''
         Extract frames and indices from a video at a given frame extraction frequency.
         Args:
@@ -64,11 +65,11 @@ class VideoMomentExtractorOneShot:
                 break
 
         # Add the processed video to the footage data
-        footage_data.add_video(video)
+        self.footage_data.add_video(video)
 
         print(f"Extracted {len(video.frames)} frames from {video_path}.")
 
-    def select_frames(self, footage_data):
+    def select_frames(self):
         '''
         Compute the additional score for each frame based on 0.6 * visual score + 0.4 * relevance score,
         and select the top N clips based on the highest scores, ensuring no frame overlap.
@@ -82,10 +83,13 @@ class VideoMomentExtractorOneShot:
 
         # Compute the combined score for each frame
         scored_frames = []
-        for video in footage_data.videos:
+        for video in self.footage_data.videos:
             for frame in video.frames:
-                combined_score = 0.6 * frame.visual_score + 0.4 * frame.relatedness_score
-                scored_frames.append((combined_score, frame))
+                try: 
+                    combined_score = 0.6 * frame.visual_score + 0.4 * frame.relatedness_score
+                    scored_frames.append((combined_score, frame))
+                except:
+                    print("error computing combined score")
 
         # Sort frames by combined score in descending order
         scored_frames.sort(reverse=True, key=lambda x: x[0])
@@ -120,13 +124,13 @@ class VideoMomentExtractorOneShot:
         # Process each video file
         for video_file in video_files:
             video_path = os.path.join(folder_path, video_file)
-            self.extract_frames_from_video(video_path, self.footage_data)
+            self.extract_frames_from_video(video_path)
 
         # Use the one-shot selector to generate descriptions, scores, and select frames
         self.oneshot_selector.comprehend_and_select_frames(self.footage_data)
 
         # Select the top frames based on scores
-        self.select_frames(self.footage_data)
+        self.select_frames()
 
 # Argument parsing setup
 def parse_args():

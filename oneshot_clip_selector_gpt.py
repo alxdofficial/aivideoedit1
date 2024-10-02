@@ -6,7 +6,7 @@ import math
 import json
 
 class GptSelectorOneShot:
-    def __init__(self, api_key, model_name, frame_extraction_frequency, user_prompt):
+    def __init__(self, api_key, model_name, user_prompt):
         self.api_key = api_key
         self.model_name = model_name
         self.user_prompt = user_prompt
@@ -82,7 +82,7 @@ class GptSelectorOneShot:
                     if response.status_code == 200:
                         # Extract the generated descriptions and scores from the response
                         batch_responses = response.json()['choices'][0]['message']['content']
-                        # print(batch_responses)
+                        print(batch_responses)
                         # Split the batch response into lines
                         parsed_responses = batch_responses.strip().split('\n')
 
@@ -95,8 +95,8 @@ class GptSelectorOneShot:
                                     batch_frames[i].description = json_response["description"].strip()
                                     batch_frames[i].relatedness_score = int(json_response["relatedness_score"])
                                     batch_frames[i].visual_score = int(json_response["visual_score"])
-                                except json.JSONDecodeError as e:
-                                    # print(f"Error decoding JSON for frame {i}: {e}")
+                                except:
+                                    print("line failed to parse: ", line)
                                     pass
 
                     else:

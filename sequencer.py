@@ -26,7 +26,7 @@ class Sequencer:
         formatted_prompt = (
             f"You are helping to order clips for a video based on their visual interest and storytelling. "
             f"Please order the clips based on the descriptions to make a coherent, visually pleasing video.\n"
-            "Return only the IDs of the clips, each on a new line.\n"
+            "Return only the IDs of the clips, and nothing else, each id on a new line.\n"
             "\nAvailable clips:\n" + "\n".join(selected_clips)
         )
 
@@ -71,6 +71,7 @@ class Sequencer:
 
             if response.status_code == 200:
                 # Extract the response and parse the ordered clip IDs
+                print(response.json()['choices'][0]['message']['content'])
                 ordered_ids = response.json()['choices'][0]['message']['content'].strip().split("\n")
                 return [clip_id.strip() for clip_id in ordered_ids]
 

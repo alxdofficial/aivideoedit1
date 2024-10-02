@@ -12,10 +12,12 @@ def parse_args():
     # parser.add_argument("--visionmodel", type=str, default="llava", help="model for frame descriptions")
     parser.add_argument("--visionmodel", type=str, default="gpt-4o-mini", help="model for frame descriptions")
     parser.add_argument("--selectmodel", type=str, default="gpt-4o", help="model for selecting moments")
-    parser.add_argument("--folder_path", type=str, default="testfootage1", help="Path to the folder containing video files")
+    parser.add_argument("--folder_path", type=str, default="testfootage3", help="Path to the folder containing video files")
     parser.add_argument("--frame_extraction_frequency", type=int, default=96, help="Frequency of frame extraction (default: 24 frames) 1 sec")
-    # parser.add_argument("--user_prompt", type=str, default="create a energetic video of the lakers team in attack", help="prompt for the video")
-    parser.add_argument("--user_prompt", type=str, default="create a scenic hiking video", help="prompt for the video")
+    parser.add_argument("--user_prompt", type=str, default="create a energetic video of the lakers team in attack", help="prompt for the video")
+    # parser.add_argument("--user_prompt", type=str, default="create a scenic hiking video", help="prompt for the video")
+    # parser.add_argument("--user_prompt", type=str, default="create a cool travel video", help="prompt for the video")
+
 
 
     return parser.parse_args()
