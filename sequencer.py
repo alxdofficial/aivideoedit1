@@ -1,27 +1,26 @@
 import requests
-import math
 import os
+from sequencervisualizer import SequencerVisualizer
 
 class Sequencer:
     def __init__(self, model_name):
         self.api_key = os.getenv('OPENAI_API_KEY')
         self.model_name = model_name
 
-    def format_frames_for_gpt(self, footage_data):
+    def format_frames_for_gpt(self, frames):
         '''
         Format the selected frames into a structure for GPT-4O to order them.
         Args:
-            footage_data (FootageData): The footage data containing videos and frames.
+            frames (list): List of selected Frame objects.
         Returns:
             str: The formatted prompt string.
         '''
         selected_clips = []
         
-        # Query all selected frames in all videos
-        for video in footage_data.videos:
-            for frame in video.frames:
-                if frame.chosen:
-                    selected_clips.append(f"- {frame.id}, {frame.description}")
+        # Query all selected frames
+        for frame in frames:
+            if frame.chosen:
+                selected_clips.append(f"- {frame.id}, {frame.description}")
 
         formatted_prompt = (
             f"You are helping to order clips for a video based on their visual interest and storytelling. "
@@ -32,16 +31,16 @@ class Sequencer:
 
         return formatted_prompt
 
-    def order_clips(self, footage_data):
+    def order_clips(self, frames):
         '''
         Queries GPT-4O to order selected frames based on visual interest and storytelling.
         Args:
-            footage_data (FootageData): The footage data containing videos and frames.
+            frames (list): List of selected Frame objects.
         Returns:
             list: List of ordered clip IDs.
         '''
-        # Format the footage data into a prompt
-        prompt = self.format_frames_for_gpt(footage_data)
+        # Format the frames into a prompt
+        prompt = self.format_frames_for_gpt(frames)
 
         # Prepare the request payload for GPT-4O
         headers = {
@@ -83,41 +82,38 @@ class Sequencer:
             print(f"Error in ordering clips: {e}")
             return []
 
-    def pretty_print_output(self, ordered_ids, footage_data):
+    def pretty_print_output(self, ordered_ids, frames):
         '''
-        Pretty print the ordered clips with their ID, filepath, frame number, and timestamp.
+        Pretty print the ordered clips with their ID, filepath, and frame number.
         Args:
             ordered_ids (list): List of ordered clip IDs.
-            footage_data (FootageData): The footage data containing videos and frames.
+            frames (list): List of selected Frame objects.
         '''
         print("\nFinal Ordered Clips:\n")
         for clip_id in ordered_ids:
-            for video in footage_data.videos:
-                for frame in video.frames:
-                    if frame.id == clip_id:
-                        # Calculate timestamp from frame number and frame rate
-                        timestamp = frame.frame_number / video.fps
-                        minutes = int(timestamp // 60)
-                        seconds = int(timestamp % 60)
-                        timestamp_str = f"{minutes:02}:{seconds:02}"
+            for frame in frames:
+                if frame.id == clip_id:
+                    print(f"Clip ID: {frame.id}")
+                    print(f"Filepath: {frame.video_path}")
+                    print(f"Frame Number: {frame.frame_number}")
+                    print(f"Description: {frame.description}")
+                    print("-" * 40)
 
-                        print(f"Clip ID: {frame.id}")
-                        print(f"Filepath: {video.video_path}")
-                        print(f"Frame Number: {frame.frame_number}")
-                        print(f"Timestamp: {timestamp_str}")
-                        print("-" * 40)
-
-    def run(self, footage_data):
+    def run(self, frames):
         '''
         Runs the complete process of ordering clips and printing the final ordered list.
         Args:
-            footage_data (FootageData): The footage data containing videos and frames.
+            frames (list): List of selected Frame objects.
         '''
+        print(frames)
         # Step 1: Order the clips using GPT-4O based on visual interest and storytelling
-        ordered_ids = self.order_clips(footage_data)
+        ordered_ids = self.order_clips(frames)
 
         # Step 2: Pretty print the ordered clips with relevant details
         if ordered_ids:
-            self.pretty_print_output(ordered_ids, footage_data)
+            self.pretty_print_output(ordered_ids, frames)
         else:
             print("No clips were ordered.")
+
+        sv = SequencerVisualizer()
+        sv.create_final_video(ordered_ids, frames)
