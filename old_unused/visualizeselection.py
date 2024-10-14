@@ -45,15 +45,12 @@ class FootageVisualizer:
         # Loop through all videos and frames
         for video_idx, video in enumerate(footage_data.videos):
             for frame_idx, frame in enumerate(video.frames):
-                # Convert the image frame (numpy array) to PIL Image for visualization
-                img_pil = Image.fromarray(frame.image)
-
                 # Apply a thick green border if the frame is chosen
                 if frame.chosen:
-                    img_pil = ImageOps.expand(img_pil, border=20, fill='green')
+                    frame.image = ImageOps.expand(frame.image, border=20, fill='green')
 
                 # Plot the image
-                axes[current_frame_idx].imshow(img_pil)
+                axes[current_frame_idx].imshow(frame.image)
                 axes[current_frame_idx].axis('off')
 
                 # Add the frame ID and description below the image

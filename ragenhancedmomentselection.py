@@ -93,7 +93,7 @@ class RAGEnhancedMomentSelector:
                 if count % self.keyframe_frequency == 0:
                     self.keyframe_storage.append(image)
 
-                if i == 130:
+                if i == 20000:
                     break
 
         # Check for failed objects
@@ -188,7 +188,7 @@ class RAGEnhancedMomentSelector:
 
         # Now generate a list of interesting sights or actions based on user prompt and descriptions
         description_prompt = f"Based on these keyframe descriptions below, and the user's prompt: '{self.args.user_prompt}', imagine some other sights or \
-            actions that could've been part of the footage that complement the prompt and are visually interesting. in addition, choose from some of the \
+            actions that could've been part of the footage that fit the prompt and are visually interesting. in addition, choose from some of the \
             existing descriptions that are video worthy. make a list of these scenes and return each item on a new line\n  {descriptions}"
 
         payload = {
@@ -240,14 +240,12 @@ class RAGEnhancedMomentSelector:
         content = [
             {
                 "type": "text",
-                "text": f"Describe this frame image in less than 20 words."
+                "text": f"Describe this frame in detail."
             },
             {
                 "type": "image_url",
                 "image_url": { 
-                    "url": f"data:image/png;base64,{base64_image}",
-                    "detail": "low"
-                }
+                    "url": f"data:image/png;base64,{base64_image}"                }
             }
         ]
         payload = {
@@ -277,7 +275,6 @@ class RAGEnhancedMomentSelector:
             print(f"Error generating description for frame {frame_id}: {e}")
             return "Description generation failed."
                         
-
     def query_vector_database(self, augmented_prompts):
         """
         For each augmented prompt, get the vector embedding using CLIP and query the Weaviate database for the best matching frame.
@@ -300,29 +297,36 @@ class RAGEnhancedMomentSelector:
             # Weaviate vector search using the text embedding to get the best match
             search_result = self.frames_collection.query.near_vector(near_vector=text_embedding[0], limit=1)
             search_result = search_result.objects[0].properties
+
             # Open the video and retrieve the frame using PyAV
             container = av.open(search_result["filePath"])
-            container.seek(int(search_result["frameNumber"]))  # Seek to the frame number
-            for frame in container.decode(video=0):
-                frame_image = Image.fromarray(frame.to_ndarray(format="rgb24"))
-                break
-        
-            # Generate a description for the frame
-            description = self.generate_frame_description(search_result["frameID"], frame_image)
-
-            # Create the Frame object
-            frame_obj = Frame(
-                id=search_result["frameID"],
-                image=frame_image,
-                frame_number=int(search_result["frameNumber"]),
-                video_path=search_result["filePath"],
-                description=description,
-                chosen=True
-            )
+            stream = container.streams.video[0]
+            target_frame_number = int(search_result["frameNumber"])
             
-            frames_list.append(frame_obj)
+            # Decode frames until the target frame is found
+            container.seek(0)  # Start at the beginning of the video stream
+            for i, frame in enumerate(container.decode(video=0)):
+                if i == target_frame_number:
+                    # Convert the frame to an image
+                    frame_image = Image.fromarray(frame.to_ndarray(format="rgb24"))
+                    # Generate a description for the frame
+                    description = self.generate_frame_description(search_result["frameID"], frame_image)
+
+                    # Create the Frame object
+                    frame_obj = Frame(
+                        id=search_result["frameID"],
+                        image=frame_image,
+                        frame_number=target_frame_number,
+                        video_path=search_result["filePath"],
+                        description=description,
+                        chosen=True
+                    )
+                    
+                    frames_list.append(frame_obj)
+                    break
 
         return frames_list
+
 
     def run(self, folder_path):
         """

@@ -1,6 +1,5 @@
 import requests
 import os
-from sequencervisualizer import SequencerVisualizer
 
 class Sequencer:
     def __init__(self, model_name):
@@ -115,5 +114,6 @@ class Sequencer:
         else:
             print("No clips were ordered.")
 
-        sv = SequencerVisualizer()
-        sv.create_final_video(ordered_ids, frames)
+        return ordered_ids
+
+       
